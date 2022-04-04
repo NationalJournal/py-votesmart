@@ -15,7 +15,7 @@ class VoteSmartAPI:
         self.api_key = api_key
 
     def api_call(self, function, params):
-        request_str = "http://api.votesmart.org/{function}".format(function=function)
+        request_str = "https://api.votesmart.org/{function}".format(function=function)
         payload = self._set_payload(params)
         response = requests.get(request_str, params=payload)
         try:
