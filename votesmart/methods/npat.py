@@ -5,7 +5,7 @@ Political Courage Test
 
 Returns a candidates most recently filled out Political Courage Test.
 
-http://api.votesmart.org/docs/Npat.html
+https://api.votesmart.org/docs/Npat.html
 """
 
 from .base import APIMethodBase
