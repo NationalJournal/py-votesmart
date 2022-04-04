@@ -1,7 +1,7 @@
 """
 Measure methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/Measure.html
+https://api.votesmart.org/docs/Measure.html
 """
 
 from .base import APIMethodBase
