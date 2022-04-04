@@ -1,7 +1,7 @@
 """
 Candidates methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/Candidates.html
+https://api.votesmart.org/docs/Candidates.html
 """
 
 
