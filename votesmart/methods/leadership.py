@@ -1,7 +1,7 @@
 """
 Leadership methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/Leadership.html
+https://api.votesmart.org/docs/Leadership.html
 """
 
 from .base import APIMethodBase

@@ -1,7 +1,7 @@
 """
 Election methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/Election.html
+https://api.votesmart.org/docs/Election.html
 """
 
 from .base import APIMethodBase

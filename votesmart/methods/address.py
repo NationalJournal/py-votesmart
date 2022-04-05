@@ -1,7 +1,7 @@
 """
 Address methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/Address.html
+https://api.votesmart.org/docs/Address.html
 """
 
 

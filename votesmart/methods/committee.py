@@ -1,7 +1,7 @@
 """
 Committee methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/Committee.html
+https://api.votesmart.org/docs/Committee.html
 """
 
 from .base import APIMethodBase

@@ -1,7 +1,7 @@
 """
 Local methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/Local.html
+https://api.votesmart.org/docs/Local.html
 """
 
 from .base import APIMethodBase

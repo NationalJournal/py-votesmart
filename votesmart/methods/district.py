@@ -1,7 +1,7 @@
 """
 District methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/District.html
+https://api.votesmart.org/docs/District.html
 """
 
 from .base import APIMethodBase

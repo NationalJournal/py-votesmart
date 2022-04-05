@@ -1,7 +1,7 @@
 """
 CandidateBio methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/CandidateBio.html
+https://api.votesmart.org/docs/CandidateBio.html
 """
 
 from .base import APIMethodBase

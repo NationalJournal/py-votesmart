@@ -1,7 +1,7 @@
 """
 Votes methods that correspond to this API documentation page
 
-http://api.votesmart.org/docs/Votes.html
+https://api.votesmart.org/docs/Votes.html
 """
 
 
