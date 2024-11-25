@@ -1,6 +1,12 @@
 py-votesmart changelog
 ==========================
 
+0.4.5
+-----
+    * NationalJournal fork of ndanielsen/py-votesmart
+    * Require requests>=2.20.0 (was ==2.20.0)
+    * Use https for API endpoints and documentation links
+
 0.4.4
 -----
     * Add Local, Leadership, Npat, Measure and Office API methods
