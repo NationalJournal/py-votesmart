@@ -1,6 +1,22 @@
 """Containers to hold individual data items in a response
 """
 
+
+def _apply_aliases(d, aliases):
+    """Return a copy of d with legacy field names added as aliases.
+
+    For example, if aliases={'id': 'candidateId'} and d has 'id' but not
+    'candidateId', the returned dict will have both 'id' and 'candidateId'.
+
+    Always returns a new dict to avoid mutating the caller's data.
+    """
+    d = dict(d)
+    for new_name, old_name in aliases.items():
+        if new_name in d and old_name not in d:
+            d[old_name] = d[new_name]
+    return d
+
+
 class VotesmartApiObject(dict):
     "Dictionary like object"
 
@@ -22,20 +38,29 @@ class VotesmartApiObject(dict):
     def __delitem__(self, key):
         del self.__dict__[key]
 
+    def __eq__(self, other):
+        if isinstance(other, dict):
+            return self.__dict__ == other
+        if isinstance(other, VotesmartApiObject):
+            return self.__dict__ == other.__dict__
+        return NotImplemented
+
+    def __contains__(self, item):
+        return item in self.__dict__
+
+    def __iter__(self):
+        return iter(self.__dict__)
+
     def clear(self):
         return self.__dict__.clear()
 
     def copy(self):
         return self.__dict__.copy()
 
-    def has_key(self, k):
-        return k in self.__dict__
-
-    def get(self, k, default=False):
-        if self.has_key(k):
-            return self.__getitem__(k)
-        else:
-            return default
+    def get(self, k, default=None):
+        if k in self.__dict__:
+            return self.__dict__[k]
+        return default
 
     def update(self, *args, **kwargs):
         return self.__dict__.update(*args, **kwargs)
@@ -52,25 +77,13 @@ class VotesmartApiObject(dict):
     def pop(self, *args):
         return self.__dict__.pop(*args)
 
-    def __cmp__(self, dict_):
-        return self.__cmp__(self.__dict__, dict_)
-
-    def __contains__(self, item):
-        return item in self.__dict__
-
-    def __iter__(self):
-        return iter(self.__dict__)
-
-    def __unicode__(self):
-        return unicode(repr(self.__dict__))
-
 
 class Candidate(VotesmartApiObject):
-    def __str__(self):
-        return ' '.join((self.firstName, self.lastName))
+    def __init__(self, d):
+        self.__dict__ = _apply_aliases(d, {'id': 'candidateId'})
 
-    def get(self, k, default=False):
-        if self.has_key(k):
-            return self.__getitem__(k)
-        else:
-            return default
+    def __str__(self):
+        return ' '.join((
+            getattr(self, 'firstName', ''),
+            getattr(self, 'lastName', ''),
+        ))

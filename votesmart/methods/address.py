@@ -1,49 +1,74 @@
 """
-Address methods that correspond to this API documentation page
+Address methods for Vote Smart REST API 2.0.
 
-https://api.votesmart.org/docs/Address.html
+Endpoint mapping:
+    Address.getCampaign           -> GET /v1/address/campaign/by-candidate
+    Address.getCampaignWebAddress -> GET /v1/address/campaign/web-address/by-candidate
+    Address.getCampaignByElection -> GET /v1/address/campaign/by-election
+    Address.getOffice             -> GET /v1/address/office/by-candidate
+    Address.getOfficeWebAddress   -> GET /v1/address/office/web-address/by-candidate
+    Address.getOfficeByOfficeState -> GET /v1/address/office/by-office-state
 """
 
-
 from .base import APIMethodBase
+from .containers import VotesmartApiObject
+
+
+class AddressData(VotesmartApiObject):
+    def __str__(self):
+        return str(getattr(self, 'type', ''))
+
+
+class WebAddress(VotesmartApiObject):
+    def __str__(self):
+        return '{}: {}'.format(
+            getattr(self, 'webAddressType', ''),
+            getattr(self, 'webAddress', ''),
+        )
 
 
 class Address(APIMethodBase):
-    def __init__(self, api_instance):
-        raise NotImplementedError()
 
-#         @staticmethod
-#         def getCampaign(candidateId):
-#             params = {'candidateId': candidateId}
-#             result = votesmart._apicall('Address.getCampaign', params)
-#             return _result_to_obj(AddressData, result['address']['office'])
-#
-#         @staticmethod
-#         def getCampaignWebAddress(candidateId):
-#             params = {'candidateId': candidateId}
-#             result = votesmart._apicall('Address.getCampaignWebAddress', params)
-#             return _result_to_obj(WebAddress, result['webaddress']['address'])
-#
-#         @staticmethod
-#         def getCampaignByElection(electionId):
-#             params = {'electionId': electionId}
-#             result = votesmart._apicall('Address.getCampaignByElection', params)
-#             return _result_to_obj(AddressData, result['address']['office'])
-#
-#         @staticmethod
-#         def getOffice(candidateId):
-#             params = {'candidateId': candidateId}
-#             result = votesmart._apicall('Address.getOffice', params)
-#             return _result_to_obj(AddressData, result['address']['office'])
-#
-#         @staticmethod
-#         def getOfficeWebAddress(candidateId):
-#             params = {'candidateId': candidateId}
-#             result = votesmart._apicall('Address.getOfficeWebAddress', params)
-#             return _result_to_obj(WebAddress, result['webaddress']['address'])
-#
-#         #@staticmethod
-#         #def getOfficeByOfficeState(officeId, stateId=None):
-#         #    params = {'officeId': officeId, 'stateId': stateId}
-#         #    result = votesmart._apicall('Address.getOfficeByOfficeState', params)
-#         #    return _result_to_obj(Address, result['address']['office'])
+    def getCampaign(self, candidateId):
+        params = {'candidateId': candidateId}
+        data = self.paginated_api_call(
+            'v1/address/campaign/by-candidate', params
+        )
+        return self.result_to_obj(AddressData, data)
+
+    def getCampaignWebAddress(self, candidateId):
+        params = {'candidateId': candidateId}
+        data = self.paginated_api_call(
+            'v1/address/campaign/web-address/by-candidate', params
+        )
+        return self.result_to_obj(WebAddress, data)
+
+    def getCampaignByElection(self, electionId):
+        params = {'electionId': electionId}
+        data = self.paginated_api_call(
+            'v1/address/campaign/by-election', params
+        )
+        return self.result_to_obj(AddressData, data)
+
+    def getOffice(self, candidateId):
+        params = {'candidateId': candidateId}
+        data = self.paginated_api_call(
+            'v1/address/office/by-candidate', params
+        )
+        return self.result_to_obj(AddressData, data)
+
+    def getOfficeWebAddress(self, candidateId):
+        params = {'candidateId': candidateId}
+        data = self.paginated_api_call(
+            'v1/address/office/web-address/by-candidate', params
+        )
+        return self.result_to_obj(WebAddress, data)
+
+    def getOfficeByOfficeState(self, officeId, stateId=None):
+        params = {'officeId': officeId}
+        if stateId is not None:
+            params['stateId'] = stateId
+        data = self.paginated_api_call(
+            'v1/address/office/by-office-state', params
+        )
+        return self.result_to_obj(AddressData, data)

@@ -1,24 +1,32 @@
 """
-District methods that correspond to this API documentation page
+District methods for Vote Smart REST API 2.0.
 
-https://api.votesmart.org/docs/District.html
+Endpoint mapping:
+    District.getByOfficeState -> GET /v1/districts/by-office-state
+    District.getByZip         -> GET /v1/districts/by-zip
 """
 
 from .base import APIMethodBase
 from .containers import VotesmartApiObject
 
+
 class DistrictData(VotesmartApiObject):
     def __str__(self):
-        return self.name
+        return str(getattr(self, 'name', ''))
+
 
 class District(APIMethodBase):
 
     def getByOfficeState(self, officeId, stateId, districtName=None):
-        params = {'officeId':officeId, 'stateId': stateId, 'districtName': districtName}
-        result = self.api.api_call('District.getByOfficeState', params)
-        return self.result_to_obj(DistrictData, result['districtList']['district'])
+        params = {'officeId': officeId, 'stateId': stateId}
+        if districtName is not None:
+            params['districtName'] = districtName
+        data = self.paginated_api_call('v1/districts/by-office-state', params)
+        return self.result_to_obj(DistrictData, data)
 
     def getByZip(self, zip5, zip4=None):
-        params = {'zip5': zip5, 'zip4': zip4}
-        result = self.api.api_call('District.getByZip', params)
-        return self.result_to_obj(DistrictData, result['districtList']['district'])
+        params = {'zip5': zip5}
+        if zip4 is not None:
+            params['zip4'] = zip4
+        data = self.paginated_api_call('v1/districts/by-zip', params)
+        return self.result_to_obj(DistrictData, data)

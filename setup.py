@@ -1,5 +1,4 @@
 import os
-import re
 import codecs
 
 from setuptools import setup
@@ -7,11 +6,13 @@ from setuptools import find_packages
 
 PROJECT = os.path.abspath(os.path.dirname(__file__))
 REQUIRE_PATH = "requirements.txt"
-EXCLUDES     = (
+EXCLUDES = (
     "tests", "bin", "docs", "fixtures", "register", "notebooks", "examples",
 )
 
-long_description = open('README.rst').read()
+with open(os.path.join(PROJECT, 'README.rst')) as f:
+    long_description = f.read()
+
 
 def read(*parts):
     """
@@ -20,6 +21,7 @@ def read(*parts):
     """
     with codecs.open(os.path.join(PROJECT, *parts), 'rb', 'utf-8') as f:
         return f.read()
+
 
 def get_requires(path=REQUIRE_PATH):
     """
@@ -31,29 +33,32 @@ def get_requires(path=REQUIRE_PATH):
         if line and not line.startswith('#'):
             yield line
 
-setup(name="py-votesmart",
-      version="0.4.5",
-      description="Libraries for interacting with the Project Vote Smart API",
-      author="Nathan Danielsen <nathan.danielsen@gmail.com>",
-      author_email = "nathan.danielsen@gmail.com",
-      license="BSD",
-      url="https://github.com/NationalJournal/py-votesmart/",
-      long_description="py-votesmart is a fork of the original python-votesmart with python3 support",
-      packages=find_packages(where=PROJECT, exclude=EXCLUDES),
 
-      platforms=["any"],
-      classifiers=["Development Status :: 3 - Alpha",
-                   "Intended Audience :: Developers",
-                   "License :: OSI Approved :: BSD License",
-                   "Natural Language :: English",
-                   "Operating System :: OS Independent",
-                   "Programming Language :: Python",
-                   "Topic :: Software Development :: Libraries :: Python Modules",
-                   'Programming Language :: Python',
-                   "Programming Language :: Python :: 2.7",
-                   "Programming Language :: Python :: 3.4",
-                   "Programming Language :: Python :: 3.5",
-                   "Programming Language :: Python :: 3.6",
-                   ],
-      install_requires=list(get_requires()),
-      )
+setup(
+    name="py-votesmart",
+    version="2.0.0",
+    description="Python library for the Vote Smart REST API 2.0",
+    author="Nathan Danielsen <nathan.danielsen@gmail.com>",
+    author_email="nathan.danielsen@gmail.com",
+    license="BSD",
+    url="https://github.com/NationalJournal/py-votesmart/",
+    long_description=long_description,
+    packages=find_packages(where=PROJECT, exclude=EXCLUDES),
+    platforms=["any"],
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+    ],
+    install_requires=list(get_requires()),
+    python_requires=">=3.6",
+)
