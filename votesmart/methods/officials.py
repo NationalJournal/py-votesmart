@@ -1,53 +1,70 @@
 """
-Officials methods that correspond to this API documentation page
+Officials methods for Vote Smart REST API 2.0.
 
-https://api.votesmart.org/docs/Officials.html
+Endpoint mapping:
+    Officials.getStatewide     -> GET /v1/officials/by-state
+    Officials.getByOfficeState -> GET /v1/officials/by-office-id
+    Officials.getByOfficeType  -> GET /v1/officials/by-office-type
+    Officials.getByLastname    -> GET /v1/officials/by-lastname
+    Officials.getByLevenstein  -> GET /v1/officials/by-levenshtein
+    Officials.getByDistrict    -> GET /v1/officials/by-district-id
+    Officials.getByZip         -> GET /v1/officials/by-zip
 """
 
 from .base import APIMethodBase
 from .containers import VotesmartApiObject
 
+
 class Official(VotesmartApiObject):
     def __str__(self):
-        return ' '.join((self.title, self.firstName, self.lastName))
-
-class OfficeType(VotesmartApiObject):
-    def __str__(self):
-        return ': '.join((self.officeTypeId, self.name))
+        return '{} {} {}'.format(
+            getattr(self, 'title', ''),
+            getattr(self, 'firstName', ''),
+            getattr(self, 'lastName', ''),
+        )
 
 
 class Officials(APIMethodBase):
 
-    def getTypes(self):
-        result = self.api.api_call('Office.getTypes', {})
-        return self.result_to_obj(OfficeType, result['officeTypes']['type'])
-
     def getStatewide(self, stateId=None):
-        params = {'stateId': stateId}
-        result = self.api.api_call('Officials.getStatewide', params)
-        return self.result_to_obj(Official, result['candidateList']['candidate'])
+        params = {}
+        if stateId is not None:
+            params['stateId'] = stateId
+        data = self.paginated_api_call('v1/officials/by-state', params)
+        return self.result_to_obj(Official, data)
 
     def getByOfficeState(self, officeId, stateId=None):
-        params = {'officeId':officeId, 'stateId': stateId}
-        result = self.api.api_call('Officials.getByOfficeState', params)
-        return self.result_to_obj(Official, result['candidateList']['candidate'])
+        params = {'officeId': officeId}
+        if stateId is not None:
+            params['stateId'] = stateId
+        data = self.paginated_api_call('v1/officials/by-office-id', params)
+        return self.result_to_obj(Official, data)
+
+    def getByOfficeType(self, officeTypeId, stateId=None):
+        params = {'officeTypeId': officeTypeId}
+        if stateId is not None:
+            params['stateId'] = stateId
+        data = self.paginated_api_call('v1/officials/by-office-type', params)
+        return self.result_to_obj(Official, data)
 
     def getByLastname(self, lastName):
-        params = {'lastName':lastName}
-        result = self.api.api_call('Officials.getByLastname', params)
-        return self.result_to_obj(Official, result['candidateList']['candidate'])
+        params = {'lastName': lastName}
+        data = self.paginated_api_call('v1/officials/by-lastname', params)
+        return self.result_to_obj(Official, data)
 
     def getByLevenstein(self, lastName):
-        params = {'lastName':lastName}
-        result = self.api.api_call('Officials.getByLevenstein', params)
-        return self.result_to_obj(Official, result['candidateList']['candidate'])
+        params = {'lastName': lastName}
+        data = self.paginated_api_call('v1/officials/by-levenshtein', params)
+        return self.result_to_obj(Official, data)
 
     def getByDistrict(self, districtId):
-        params = {'districtId':districtId}
-        result = self.api.api_call('Officials.getByDistrict', params)
-        return self.result_to_obj(Official, result['candidateList']['candidate'])
+        params = {'districtId': districtId}
+        data = self.paginated_api_call('v1/officials/by-district-id', params)
+        return self.result_to_obj(Official, data)
 
     def getByZip(self, zip5, zip4=None):
-        params = {'zip4': zip4, 'zip5': zip5}
-        result = self.api.api_call('Officials.getByZip', params)
-        return self.result_to_obj(Official, result['candidateList']['candidate'])
+        params = {'zip5': zip5}
+        if zip4 is not None:
+            params['zip4'] = zip4
+        data = self.paginated_api_call('v1/officials/by-zip', params)
+        return self.result_to_obj(Official, data)

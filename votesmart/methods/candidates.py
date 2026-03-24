@@ -1,9 +1,15 @@
 """
-Candidates methods that correspond to this API documentation page
+Candidates methods for Vote Smart REST API 2.0.
 
-https://api.votesmart.org/docs/Candidates.html
+Endpoint mapping:
+    Candidates.getByOfficeState     -> GET /v1/candidates/by-office-state
+    Candidates.getByOfficeTypeState -> GET /v1/candidates/by-office-type-state
+    Candidates.getByLastname        -> GET /v1/candidates/by-lastname
+    Candidates.getByLevenstein      -> GET /v1/candidates/by-levenshtein
+    Candidates.getByElection        -> GET /v1/candidates/by-election
+    Candidates.getByDistrict        -> GET /v1/candidates/by-district
+    Candidates.getByZip             -> GET /v1/candidates/by-zip
 """
-
 
 from .base import APIMethodBase
 from .containers import Candidate
@@ -12,37 +18,58 @@ from .containers import Candidate
 class Candidates(APIMethodBase):
 
     def getByOfficeState(self, officeId, stateId=None, electionYear=None, stageId=None):
-        params = {'officeId': officeId, 'stateId':stateId, 'electionYear': electionYear, "stageId": stageId}
-        result = self.api.api_call('Candidates.getByOfficeState', params)
-        return self.result_to_obj(Candidate, result['candidateList']['candidate'])
+        params = {'officeId': officeId}
+        if stateId is not None:
+            params['stateId'] = stateId
+        if electionYear is not None:
+            params['electionYear'] = electionYear
+        if stageId is not None:
+            params['stageId'] = stageId
+        data = self.paginated_api_call('v1/candidates/by-office-state', params)
+        return self.result_to_obj(Candidate, data)
 
     def getByOfficeTypeState(self, officeTypeId, stateId=None, electionYear=None):
-        params = {'officeTypeId': officeTypeId, 'stateId':stateId, 'electionYear': electionYear}
-        result = self.api.api_call('Candidates.getByOfficeTypeState', params)
-        return self.result_to_obj(Candidate, result['candidateList']['candidate'])
+        params = {'officeTypeId': officeTypeId}
+        if stateId is not None:
+            params['stateId'] = stateId
+        if electionYear is not None:
+            params['electionYear'] = electionYear
+        data = self.paginated_api_call('v1/candidates/by-office-type-state', params)
+        return self.result_to_obj(Candidate, data)
 
     def getByLastname(self, lastName, electionYear=None):
-        params = {'lastName': lastName, 'electionYear':electionYear}
-        result = self.api.api_call('Candidates.getByLastname', params)
-        return self.result_to_obj(Candidate, result['candidateList']['candidate'])
+        params = {'lastName': lastName}
+        if electionYear is not None:
+            params['electionYear'] = electionYear
+        data = self.paginated_api_call('v1/candidates/by-lastname', params)
+        return self.result_to_obj(Candidate, data)
 
     def getByLevenstein(self, lastName, electionYear=None):
-        params = {'lastName': lastName, 'electionYear':electionYear}
-        result = self.api.api_call('Candidates.getByLevenstein', params)
-        return self.result_to_obj(Candidate, result['candidateList']['candidate'])
+        params = {'lastName': lastName}
+        if electionYear is not None:
+            params['electionYear'] = electionYear
+        data = self.paginated_api_call('v1/candidates/by-levenshtein', params)
+        return self.result_to_obj(Candidate, data)
 
     def getByElection(self, electionId, stageId=None):
-        params = {'electionId': electionId, 'stageId': stageId}
-        result = self.api.api_call('Candidates.getByElection', params)
-        return self.result_to_obj(Candidate, result['candidateList']['candidate'])
+        params = {'electionId': electionId}
+        if stageId is not None:
+            params['stageId'] = stageId
+        data = self.paginated_api_call('v1/candidates/by-election', params)
+        return self.result_to_obj(Candidate, data)
 
     def getByDistrict(self, districtId, electionYear=None):
-        params = {'districtId': districtId, 'electionYear':electionYear}
-        result = self.api.api_call('Candidates.getByDistrict', params)
-        return self.result_to_obj(Candidate, result['candidateList']['candidate'])
+        params = {'districtId': districtId}
+        if electionYear is not None:
+            params['electionYear'] = electionYear
+        data = self.paginated_api_call('v1/candidates/by-district', params)
+        return self.result_to_obj(Candidate, data)
 
     def getByZip(self, zip5, electionYear=None, zip4=None):
-        # errors on zip 20001
-        params = {'zip4': zip4, 'zip5': zip5, 'electionYear':electionYear}
-        result = self.api.api_call('Candidates.getByZip', params)
-        return self.result_to_obj(Candidate, result['candidateList']['candidate'])
+        params = {'zip5': zip5}
+        if zip4 is not None:
+            params['zip4'] = zip4
+        if electionYear is not None:
+            params['electionYear'] = electionYear
+        data = self.paginated_api_call('v1/candidates/by-zip', params)
+        return self.result_to_obj(Candidate, data)
