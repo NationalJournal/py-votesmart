@@ -10,10 +10,32 @@ def _apply_aliases(d, aliases):
 
     Always returns a new dict to avoid mutating the caller's data.
     """
-    d = dict(d)
+    d = _coerce_nulls(dict(d))
     for new_name, old_name in aliases.items():
         if new_name in d and old_name not in d:
             d[old_name] = d[new_name]
+    return d
+
+
+def _coerce_nulls(d):
+    """Replace None values with empty strings in a dict.
+
+    Nested dicts and lists of dicts are coerced recursively.
+    Non-string fields (ints, bools, floats) that happen to be None are also
+    converted to empty string — callers that need numeric types should
+    handle the conversion themselves.
+    """
+    for k, v in d.items():
+        if v is None:
+            d[k] = ""
+        elif isinstance(v, dict):
+            d[k] = _coerce_nulls(v)
+        elif isinstance(v, list):
+            d[k] = [
+                _coerce_nulls(item) if isinstance(item, dict) else
+                ("" if item is None else item)
+                for item in v
+            ]
     return d
 
 
@@ -21,7 +43,7 @@ class VotesmartApiObject(dict):
     "Dictionary like object"
 
     def __init__(self, d):
-        self.__dict__ = d
+        self.__dict__ = _coerce_nulls(dict(d))
 
     def __setitem__(self, key, item):
         self.__dict__[key] = item

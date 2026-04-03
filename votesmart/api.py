@@ -23,13 +23,16 @@ class VoteSmartAPI:
         token_validity_period: Minimum remaining seconds before the token
             is considered expired and a new one is requested.  Defaults to
             3600 (1 hour).
+        rate_limit: Maximum requests per second.  If set, the client will
+            sleep between requests to stay under this limit.  Defaults to
+            None (no limiting).
     """
 
     AUTH_URL = "https://app.votesmart-api.org/auth/login"
     BASE_URL = "https://app.votesmart-api.org"
 
     def __init__(self, email=None, password=None, access_token=None,
-                 token_validity_period=3600):
+                 token_validity_period=3600, rate_limit=None):
         if not email or not password:
             raise ValueError("Vote Smart API email and password are required")
 
@@ -39,6 +42,8 @@ class VoteSmartAPI:
         self._access_token = access_token
         self._token_changed = False
         self._method_cache = {}
+        self._rate_limit = rate_limit  # max requests per second, or None
+        self._last_request_time = 0
 
         # Validate or refresh the token
         if not self._is_token_valid():
@@ -125,9 +130,17 @@ class VoteSmartAPI:
         if not self._is_token_valid():
             self._authenticate()
 
+        # Rate limiting: wait if needed to stay under the limit
+        if self._rate_limit:
+            min_interval = 1.0 / self._rate_limit
+            elapsed = time.time() - self._last_request_time
+            if elapsed < min_interval:
+                time.sleep(min_interval - elapsed)
+
         url = "{}/{}".format(self.BASE_URL, endpoint.lstrip("/"))
         headers = {"Authorization": "Bearer {}".format(self._access_token)}
 
+        self._last_request_time = time.time()
         response = requests.get(url, params=params or {}, headers=headers)
 
         if response.status_code == 401:
