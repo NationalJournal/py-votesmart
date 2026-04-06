@@ -42,12 +42,18 @@ class Bill(VotesmartApiObject):
 class BillDetail(VotesmartApiObject):
     def __init__(self, d):
         d = _apply_aliases(d, {'id': 'billId'})
-        # Alias action IDs within nested actions (copies each action dict)
+        # Alias IDs within nested actions and categories
         actions = d.get('actions', [])
         if isinstance(actions, list):
             d['actions'] = [
                 _apply_aliases(a, {'id': 'actionId'}) if isinstance(a, dict) else a
                 for a in actions
+            ]
+        categories = d.get('categories', [])
+        if isinstance(categories, list):
+            d['categories'] = [
+                _apply_aliases(c, {'id': 'categoryId'}) if isinstance(c, dict) else c
+                for c in categories
             ]
         self.__dict__ = d
 
