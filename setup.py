@@ -36,7 +36,7 @@ def get_requires(path=REQUIRE_PATH):
 
 setup(
     name="py-votesmart",
-    version="2.0.2",
+    version="2.0.3",
     description="Python library for the Vote Smart REST API 2.0",
     author="Nathan Danielsen <nathan.danielsen@gmail.com>",
     author_email="nathan.danielsen@gmail.com",
