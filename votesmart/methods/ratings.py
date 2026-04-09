@@ -89,6 +89,16 @@ class Rating(APIMethodBase):
         if sigId is not None:
             params['sigId'] = sigId
         data = self.paginated_api_call('v1/ratings/by-candidate', params)
+        # The new API returns both "Positions" and "Lifetime Positions"
+        # ratings as separate entries for the same SIG and timespan.
+        # The old API only returned session ratings. Filter out Lifetime
+        # entries to avoid near-duplicates.
+        if isinstance(data, list):
+            data = [
+                d for d in data
+                if not isinstance(d, dict)
+                or 'lifetime' not in d.get('ratingName', '').lower()
+            ]
         return self.result_to_obj(RatingObject, data)
 
     def getRating(self, ratingId):

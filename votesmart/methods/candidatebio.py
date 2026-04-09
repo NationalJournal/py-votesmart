@@ -69,9 +69,12 @@ def _sort_key(entry):
     span = entry.get('span', '') if isinstance(entry, dict) else ''
     if not span:
         return (1, 0)  # empty spans sort last
-    # Extract the start year from spans like "2021-present", "2006-2009", "1975"
+    # Extract the first year from spans like "2021-present", "2006-2009",
+    # "1975", or "2022, 2026"
     try:
-        year = int(span.split('-')[0])
+        # Strip commas and take the first token, then split on dash
+        first_token = span.replace(',', ' ').split()[0]
+        year = int(first_token.split('-')[0])
         return (0, -year)  # negate so newest sorts first
     except (ValueError, IndexError):
         return (1, 0)
