@@ -10,8 +10,69 @@ Endpoint mapping:
     Rating.getRating           -> GET /v1/ratings/{id}
 """
 
+import re
+
 from .base import APIMethodBase
 from .containers import VotesmartApiObject, _apply_aliases
+
+
+def _extract_date_from_name(name):
+    """Extract a date string like '2024-10-15' from a ratingName like 'Positions [2024-10-15]'."""
+    match = re.search(r'\[(\d{4}-\d{2}-\d{2})\]', name)
+    return match.group(1) if match else ''
+
+
+def _filter_ratings(data):
+    """Filter out redundant ratings from the API response.
+
+    Two types of redundancy:
+    1. "Lifetime Positions/Scores" — the new API returns both session and
+       lifetime ratings as separate entries. We keep only session ratings.
+    2. Dated snapshots — the same SIG may have multiple "Positions [date]"
+       entries for the same timespan (updated at different times). We keep
+       only the most recent snapshot.
+
+    Subcategory splits (e.g., "Positions: Labor" vs "Positions: Budget/Tax")
+    are kept because they measure different things.
+    """
+    # Step 1: Filter out Lifetime entries
+    filtered = [
+        d for d in data
+        if not isinstance(d, dict)
+        or 'lifetime' not in d.get('ratingName', '').lower()
+    ]
+
+    # Step 2: Dedup dated snapshots — keep most recent per SIG + timespan
+    # Only dedup entries whose ratingName matches "Positions [YYYY-MM-DD]"
+    # (i.e., they differ only by date, not by subcategory)
+    result = []
+    seen = {}  # (sig_id, timespan, base_name) -> best entry
+
+    for d in filtered:
+        if not isinstance(d, dict):
+            result.append(d)
+            continue
+
+        name = d.get('ratingName', '')
+        date = _extract_date_from_name(name)
+
+        if date:
+            # Strip the date portion to get the base name for grouping
+            base_name = re.sub(r'\s*\[\d{4}-\d{2}-\d{2}\]\s*', '', name).strip()
+            key = (d.get('id'), d.get('timespan', ''), base_name)
+
+            if key in seen:
+                existing_date = _extract_date_from_name(seen[key].get('ratingName', ''))
+                if date > existing_date:
+                    seen[key] = d
+            else:
+                seen[key] = d
+        else:
+            # No date in name — not a dated snapshot, keep as-is
+            result.append(d)
+
+    result.extend(seen.values())
+    return result
 
 
 class Category(VotesmartApiObject):
@@ -89,16 +150,8 @@ class Rating(APIMethodBase):
         if sigId is not None:
             params['sigId'] = sigId
         data = self.paginated_api_call('v1/ratings/by-candidate', params)
-        # The new API returns both "Positions" and "Lifetime Positions"
-        # ratings as separate entries for the same SIG and timespan.
-        # The old API only returned session ratings. Filter out Lifetime
-        # entries to avoid near-duplicates.
         if isinstance(data, list):
-            data = [
-                d for d in data
-                if not isinstance(d, dict)
-                or 'lifetime' not in d.get('ratingName', '').lower()
-            ]
+            data = _filter_ratings(data)
         return self.result_to_obj(RatingObject, data)
 
     def getRating(self, ratingId):

@@ -103,14 +103,32 @@ class TestSortKey:
         sorted_entries = sorted(entries, key=_sort_key)
         assert [e['span'] for e in sorted_entries] == ['2020', '2015', '2010']
 
-    def test_range_uses_start_year(self):
+    def test_end_year_first_then_start_year(self):
         entries = [
             {'span': '2005-2010', 'fullText': 'a'},
             {'span': '2015-present', 'fullText': 'b'},
             {'span': '2010-2015', 'fullText': 'c'},
         ]
         sorted_entries = sorted(entries, key=_sort_key)
+        # present=9999 first, then 2015, then 2010
         assert [e['span'] for e in sorted_entries] == ['2015-present', '2010-2015', '2005-2010']
+
+    def test_present_sorts_before_recent_end_year(self):
+        """'present' is treated as the newest end year"""
+        entries = [
+            {'span': '2020-2025', 'fullText': 'a'},
+            {'span': '2021-present', 'fullText': 'b'},
+        ]
+        sorted_entries = sorted(entries, key=_sort_key)
+        assert sorted_entries[0]['span'] == '2021-present'
+
+    def test_same_end_year_sorted_by_start_year(self):
+        entries = [
+            {'span': '2010-2020', 'fullText': 'a'},
+            {'span': '2015-2020', 'fullText': 'b'},
+        ]
+        sorted_entries = sorted(entries, key=_sort_key)
+        assert sorted_entries[0]['span'] == '2015-2020'
 
     def test_empty_spans_sort_last(self):
         entries = [
@@ -121,23 +139,33 @@ class TestSortKey:
         assert sorted_entries[0]['span'] == '2020'
         assert sorted_entries[1]['span'] == ''
 
-    def test_non_numeric_span_sorts_last(self):
+    def test_present_only_span_sorts_first(self):
+        """A span of just 'present' has end year 9999"""
         entries = [
-            {'span': 'present', 'fullText': 'weird'},
+            {'span': 'present', 'fullText': 'current'},
+            {'span': '2020', 'fullText': 'normal'},
+        ]
+        sorted_entries = sorted(entries, key=_sort_key)
+        assert sorted_entries[0]['span'] == 'present'
+
+    def test_non_numeric_non_present_sorts_last(self):
+        entries = [
+            {'span': 'unknown', 'fullText': 'weird'},
             {'span': '2020', 'fullText': 'normal'},
         ]
         sorted_entries = sorted(entries, key=_sort_key)
         assert sorted_entries[0]['span'] == '2020'
 
     def test_comma_separated_years(self):
-        """Spans like "2022, 2026" should sort by the first year"""
+        """Spans like "2022, 2026" — end year is 2026, start year is 2022"""
         entries = [
             {'span': '1998', 'fullText': 'old'},
             {'span': '2022, 2026', 'fullText': 'multi'},
             {'span': '2019-present', 'fullText': 'current'},
         ]
         sorted_entries = sorted(entries, key=_sort_key)
-        assert [e['span'] for e in sorted_entries] == ['2022, 2026', '2019-present', '1998']
+        # present=9999 first, then 2026, then 1998
+        assert [e['span'] for e in sorted_entries] == ['2019-present', '2022, 2026', '1998']
 
     def test_missing_span_key(self):
         entries = [

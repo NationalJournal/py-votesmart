@@ -64,20 +64,55 @@ def _build_full_text(entry):
     return ', '.join(parts)
 
 
+def _parse_end_year(span):
+    """Extract end year from a span string. 'present' counts as 9999 (newest)."""
+    if not span:
+        return 0
+    if 'present' in span.lower():
+        return 9999
+    # Handle "2013-2015", "2022, 2026", "1975"
+    parts = span.replace(',', ' ').split()
+    # Take the last numeric token as end year
+    for token in reversed(parts):
+        token = token.split('-')[-1]
+        try:
+            return int(token)
+        except ValueError:
+            continue
+    return 0
+
+
+def _parse_start_year(span):
+    """Extract start year from a span string."""
+    if not span:
+        return 0
+    # Handle "2013-2015", "2022, 2026", "2021-present", "1975"
+    first_token = span.replace(',', ' ').split()[0]
+    try:
+        return int(first_token.split('-')[0])
+    except (ValueError, IndexError):
+        return 0
+
+
 def _sort_key(entry):
-    """Sort key for bio entries: newest start year first, empty spans last."""
+    """Sort key for bio entries: newest first, empty spans last.
+
+    Sort order:
+    1. End year descending ("present" is newest)
+    2. Start year descending
+    3. Empty spans last
+    """
     span = entry.get('span', '') if isinstance(entry, dict) else ''
     if not span:
-        return (1, 0)  # empty spans sort last
-    # Extract the first year from spans like "2021-present", "2006-2009",
-    # "1975", or "2022, 2026"
-    try:
-        # Strip commas and take the first token, then split on dash
-        first_token = span.replace(',', ' ').split()[0]
-        year = int(first_token.split('-')[0])
-        return (0, -year)  # negate so newest sorts first
-    except (ValueError, IndexError):
-        return (1, 0)
+        return (1, 0, 0)  # empty spans sort last
+
+    end_year = _parse_end_year(span)
+    start_year = _parse_start_year(span)
+
+    if not end_year and not start_year:
+        return (1, 0, 0)
+
+    return (0, -end_year, -start_year)
 
 
 def _ensure_full_text(bio_dict):
