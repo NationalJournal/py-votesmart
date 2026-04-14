@@ -15,10 +15,35 @@ def _build_full_text(entry):
     """Construct a fullText string from structured fields when missing.
 
     VoteSmart's new API sometimes returns fullText as null even when the
-    structured fields (title, organization, span, district) are populated.
-    This reconstructs the display string to match the old API format.
+    structured fields are populated. This reconstructs the display string
+    to match the old API format.
+
+    Two entry formats exist:
+    - Experience entries (political, profession, orgMembership, congMembership):
+      have title, organization, span, district
+      e.g. "Senator, United States Senate, 2021-present"
+    - Education entries: have degree, field, school, span
+      e.g. "BS, Foreign Service, Georgetown University, 2006-2009"
     """
     parts = []
+
+    # Education entries use degree/field/school
+    degree = entry.get('degree', '')
+    school = entry.get('school', '')
+    if degree or school:
+        if degree:
+            parts.append(degree)
+        field = entry.get('field', '')
+        if field:
+            parts.append(field)
+        if school:
+            parts.append(school)
+        span = entry.get('span', '')
+        if span:
+            parts.append(span)
+        return ', '.join(parts)
+
+    # Experience entries use title/organization
     title = entry.get('title', '')
     org = entry.get('organization', '')
     district = entry.get('district', '')
@@ -39,8 +64,64 @@ def _build_full_text(entry):
     return ', '.join(parts)
 
 
+def _parse_end_year(span):
+    """Extract end year from a span string. 'present' counts as 9999 (newest)."""
+    if not span:
+        return 0
+    if 'present' in span.lower():
+        return 9999
+    # Handle "2013-2015", "2022, 2026", "1975"
+    parts = span.replace(',', ' ').split()
+    # Take the last numeric token as end year
+    for token in reversed(parts):
+        token = token.split('-')[-1]
+        try:
+            return int(token)
+        except ValueError:
+            continue
+    return 0
+
+
+def _parse_start_year(span):
+    """Extract start year from a span string."""
+    if not span:
+        return 0
+    # Handle "2013-2015", "2022, 2026", "2021-present", "1975"
+    first_token = span.replace(',', ' ').split()[0]
+    try:
+        return int(first_token.split('-')[0])
+    except (ValueError, IndexError):
+        return 0
+
+
+def _sort_key(entry):
+    """Sort key for bio entries: newest first, empty spans last.
+
+    Sort order:
+    1. End year descending ("present" is newest)
+    2. Start year descending
+    3. Empty spans last
+    """
+    span = entry.get('span', '') if isinstance(entry, dict) else ''
+    if not span:
+        return (1, 0, 0)  # empty spans sort last
+
+    end_year = _parse_end_year(span)
+    start_year = _parse_start_year(span)
+
+    if not end_year and not start_year:
+        return (1, 0, 0)
+
+    return (0, -end_year, -start_year)
+
+
 def _ensure_full_text(bio_dict):
-    """Fill in missing fullText values across all bio experience sections."""
+    """Fill in missing fullText values and sort entries newest-first.
+
+    The old API returned bio entries sorted by start year (newest first).
+    The new API returns them in arbitrary order. This restores the expected
+    sort order after filling in any missing fullText values.
+    """
     for section in ('political', 'profession', 'education', 'orgMembership',
                     'congMembership'):
         data = bio_dict.get(section)
@@ -59,11 +140,15 @@ def _ensure_full_text(bio_dict):
             for entry in entries:
                 if not isinstance(entry, dict):
                     continue
-                if not entry.get('fullText'):
-                    built = _build_full_text(entry)
-                    if built:
-                        entry['fullText'] = built
+                # Always construct fullText from structured fields rather
+                # than relying on the API's fullText, which often has
+                # errors (wrong dates, missing prefixes, less detail).
+                built = _build_full_text(entry)
+                if built:
+                    entry['fullText'] = built
 
+            # Sort by start year, newest first, empty spans last
+            entries.sort(key=_sort_key)
             data[key] = entries
 
     return bio_dict
