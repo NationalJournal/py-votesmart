@@ -7,7 +7,7 @@ import requests
 import pytest
 
 from votesmart.api import VoteSmartAPI
-from votesmart.exceptions import VotesmartApiError
+from votesmart.exceptions import VotesmartApiError, VotesmartNotFoundError
 
 
 def _make_jwt(exp=None):
@@ -137,13 +137,20 @@ def test_api_call_retries_on_401(mocker):
     assert response == {'data': []}
 
 
-def test_api_call_raises_on_404(mocker):
-    """404 should raise VotesmartApiError."""
+def test_api_call_raises_endpoint_not_found_on_malformed_url_404(mocker):
+    """404 with Express's "Cannot GET" body shape signals a wrong URL — a
+    caller bug. Always raises the broad VotesmartApiError (not the subclass)
+    so the data-not-found path stays distinguishable."""
     token = _make_jwt()
     mocker.patch.object(requests, 'post')
 
     not_found = mock.Mock()
     not_found.status_code = 404
+    not_found.json.return_value = {
+        "message": "Cannot GET /v1/nonexistent",
+        "error": "Not Found",
+        "statusCode": 404,
+    }
     mocker.patch.object(requests, 'get', return_value=not_found)
 
     api = VoteSmartAPI(
@@ -151,8 +158,57 @@ def test_api_call_raises_on_404(mocker):
         password="password",
         access_token=token,
     )
-    with pytest.raises(VotesmartApiError):
+    with pytest.raises(VotesmartApiError) as exc_info:
         api.api_call('v1/nonexistent')
+    # Should be the broad type, not the data-not-found subclass.
+    assert not isinstance(exc_info.value, VotesmartNotFoundError)
+    assert "Endpoint not found" in str(exc_info.value)
+
+
+def test_api_call_raises_not_found_subclass_on_data_not_found_404(mocker):
+    """404 with the "no data" body shape signals the route is valid but VS
+    has nothing for this query (e.g. a General stage before the Primary has
+    happened). Raises VotesmartNotFoundError so list-shaped callers can
+    catch and treat as empty."""
+    token = _make_jwt()
+    mocker.patch.object(requests, 'post')
+
+    not_found = mock.Mock()
+    not_found.status_code = 404
+    not_found.json.return_value = {"message": "Not Found", "statusCode": 404}
+    mocker.patch.object(requests, 'get', return_value=not_found)
+
+    api = VoteSmartAPI(
+        email="test@test.com",
+        password="password",
+        access_token=token,
+    )
+    with pytest.raises(VotesmartNotFoundError) as exc_info:
+        api.api_call('v1/elections/5342/stage-candidates', {'stageId': 'G'})
+    assert "Resource not found" in str(exc_info.value)
+
+
+def test_api_call_raises_endpoint_not_found_on_unparseable_404_body(mocker):
+    """If the 404 body isn't JSON (HTML error page from a load balancer,
+    empty body, etc.) treat it as an unknown error and raise the broad
+    type. Only the explicit "no data" body shape opts in to the typed
+    subclass — anything else stays visible."""
+    token = _make_jwt()
+    mocker.patch.object(requests, 'post')
+
+    not_found = mock.Mock()
+    not_found.status_code = 404
+    not_found.json.side_effect = ValueError("No JSON")
+    mocker.patch.object(requests, 'get', return_value=not_found)
+
+    api = VoteSmartAPI(
+        email="test@test.com",
+        password="password",
+        access_token=token,
+    )
+    with pytest.raises(VotesmartApiError) as exc_info:
+        api.api_call('v1/something')
+    assert not isinstance(exc_info.value, VotesmartNotFoundError)
 
 
 def test_api_call_raises_on_500_with_json(mocker):

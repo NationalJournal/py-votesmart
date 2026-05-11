@@ -1,6 +1,8 @@
 """Command functions instances for API Calls
 """
 
+from ..exceptions import VotesmartNotFoundError
+
 
 class APIMethodBase:
     def __init__(self, api_instance):
@@ -29,7 +31,14 @@ class APIMethodBase:
         all_data = []
 
         while True:
-            result = self.api.api_call(endpoint, params)
+            try:
+                result = self.api.api_call(endpoint, params)
+            except VotesmartNotFoundError:
+                # VS returns 404 ("no data" body shape) when a list-shaped
+                # endpoint genuinely has nothing to return — most commonly
+                # /stage-candidates for a stage that hasn't happened yet.
+                # Treat as an empty list and stop paginating.
+                break
             data = result.get('data', [])
             if isinstance(data, list):
                 all_data.extend(data)
