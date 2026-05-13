@@ -1,6 +1,18 @@
 py-votesmart changelog
 ==========================
 
+2.0.6
+-----
+    * Discriminate "no data" 404s from malformed-URL 404s by inspecting the
+      response body. The "no data" body shape
+      (``{"message": "Not Found", "statusCode": 404}``) now raises a new
+      ``VotesmartNotFoundError`` exception (a subclass of
+      ``VotesmartApiError``); list-shaped endpoints that flow through
+      ``paginated_api_call`` catch it and return an empty list. Express's
+      "Cannot GET /v1/..." body and any other unrecognized 404 still raise
+      the broad ``VotesmartApiError``. Callers previously string-matching
+      ``"No candidates found"`` should switch to ``except VotesmartNotFoundError``.
+
 0.4.5
 -----
     * NationalJournal fork of ndanielsen/py-votesmart

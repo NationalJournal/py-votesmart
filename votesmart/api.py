@@ -5,7 +5,7 @@ import time
 import requests
 
 from .methods.utils import parse_api_response
-from .exceptions import VotesmartApiError
+from .exceptions import VotesmartApiError, VotesmartNotFoundError
 from . import methods
 
 
@@ -150,6 +150,26 @@ class VoteSmartAPI:
             response = requests.get(url, params=params or {}, headers=headers)
 
         if response.status_code == 404:
+            try:
+                body = response.json()
+            except ValueError:
+                body = None
+            # Route exists but VS has no data for this query. Body shape:
+            #   {"message": "Not Found", "statusCode": 404}
+            # List-shaped callers (paginated_api_call) catch this and return []
+            # so iteration can proceed; object-shaped callers let it propagate
+            # so they can tell when they passed a bad ID.
+            if (
+                isinstance(body, dict)
+                and body.get("message") == "Not Found"
+                and "error" not in body
+            ):
+                raise VotesmartNotFoundError(
+                    "Resource not found: {} (HTTP 404)".format(url)
+                )
+            # Anything else — Express's "Cannot GET /v1/..." for a wrong path,
+            # an HTML page from infrastructure, an empty body, an unexpected
+            # shape — is a caller bug or upstream issue. Surface it.
             raise VotesmartApiError(
                 "Endpoint not found: {} (HTTP 404)".format(url)
             )
