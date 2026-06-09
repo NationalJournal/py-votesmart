@@ -1,6 +1,39 @@
 py-votesmart changelog
 ==========================
 
+2.1.0
+-----
+    * Rate-limiting / retry overhaul. ``api_call`` now transparently
+      retries on transient HTTP errors (429, 502, 503, 504), honoring
+      the server's ``Retry-After`` header when present and falling back
+      to exponential backoff with multiplicative jitter otherwise.
+      Configurable via constructor params: ``max_retries`` (default 5),
+      ``retry_initial_backoff`` (1.0s), ``retry_max_backoff`` (60.0s),
+      ``retry_backoff_jitter`` (±50%), ``retry_after_max`` (300.0s cap).
+    * New typed exception subclasses of ``VotesmartApiError``:
+
+        * ``VotesmartRateLimitError`` — raised on 429 after retries
+          exhausted. Catch this if you want to back off further at the
+          application layer.
+        * ``VotesmartServerError`` — raised on 5xx after retries
+          exhausted. Indicates a Vote Smart upstream problem.
+        * ``VotesmartClientError`` — raised on 4xx other than 404/429
+          (400/401-after-refresh/403/etc). Caller-side problem;
+          retrying won't help.
+
+      All ``VotesmartApiError`` instances (and subclasses) now carry
+      ``status_code`` and ``response_body`` attributes for introspection,
+      and their string form includes ``(HTTP <code>)`` automatically.
+      Existing ``except VotesmartApiError`` catches still work — the
+      new types subclass it.
+    * New ``rate_limiter`` constructor param: pluggable callable
+      ``f() -> None`` that blocks until the next request is allowed.
+      Use this to plug in a distributed limiter (e.g. Redis-backed
+      token bucket) shared across processes. Takes precedence over
+      the existing in-process ``rate_limit=N`` (req/sec) limiter,
+      which still works for the single-process case.
+    * No new external dependencies.
+
 2.0.6
 -----
     * Discriminate "no data" 404s from malformed-URL 404s by inspecting the
