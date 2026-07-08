@@ -87,10 +87,12 @@ def _parse_start_year(span):
     if not span:
         return 0
     # Handle "2013-2015", "2022, 2026", "2021-present", "1975"
-    first_token = span.replace(',', ' ').split()[0]
+    parts = span.replace(',', ' ').split()
+    if not parts:
+        return 0
     try:
-        return int(first_token.split('-')[0])
-    except (ValueError, IndexError):
+        return int(parts[0].split('-')[0])
+    except ValueError:
         return 0
 
 
