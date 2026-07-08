@@ -1,6 +1,14 @@
 py-votesmart changelog
 ==========================
 
+2.1.1
+-----
+    * Fix ``IndexError`` in ``_parse_start_year()`` (candidate bio date
+      parsing) when a bio entry's ``span`` is truthy but
+      whitespace/comma-only (e.g. ``" "`` or ``","``). Such spans now
+      resolve to a start year of ``0`` instead of raising, matching the
+      existing fallback behavior of ``_parse_end_year()``.
+
 2.1.0
 -----
     * Rate-limiting / retry overhaul. ``api_call`` now transparently
