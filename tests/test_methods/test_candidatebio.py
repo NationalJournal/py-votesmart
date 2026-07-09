@@ -2,6 +2,7 @@ from unittest import mock
 from votesmart.methods.candidatebio import (
     CandidateBio, Bio, AddlBio,
     _build_full_text, _ensure_full_text, _sort_key,
+    _parse_start_year, _parse_end_year,
 )
 
 
@@ -90,6 +91,65 @@ class TestBuildFullTextEducation:
         assert '3.8' not in result
 
 
+# --- _parse_start_year / _parse_end_year tests ---
+
+class TestParseStartYear:
+
+    def test_single_year(self):
+        assert _parse_start_year('1975') == 1975
+
+    def test_range(self):
+        assert _parse_start_year('2013-2015') == 2013
+
+    def test_present(self):
+        assert _parse_start_year('2021-present') == 2021
+
+    def test_comma_separated(self):
+        assert _parse_start_year('2022, 2026') == 2022
+
+    def test_empty_span(self):
+        assert _parse_start_year('') == 0
+
+    def test_none_span(self):
+        assert _parse_start_year(None) == 0
+
+    def test_present_only(self):
+        """A bare 'present' has no leading year and isn't crashable, per ticket nj-cms-8611"""
+        assert _parse_start_year('present') == 0
+
+    def test_whitespace_only_span(self):
+        """Regression for nj-cms-8611: whitespace-only span crashed with IndexError"""
+        assert _parse_start_year(' ') == 0
+
+    def test_comma_only_span(self):
+        """Regression for nj-cms-8611: comma-only span crashed with IndexError"""
+        assert _parse_start_year(',') == 0
+
+
+class TestParseEndYear:
+
+    def test_single_year(self):
+        assert _parse_end_year('1975') == 1975
+
+    def test_range(self):
+        assert _parse_end_year('2013-2015') == 2015
+
+    def test_present(self):
+        assert _parse_end_year('2021-present') == 9999
+
+    def test_comma_separated(self):
+        assert _parse_end_year('2022, 2026') == 2026
+
+    def test_empty_span(self):
+        assert _parse_end_year('') == 0
+
+    def test_whitespace_only_span(self):
+        assert _parse_end_year(' ') == 0
+
+    def test_comma_only_span(self):
+        assert _parse_end_year(',') == 0
+
+
 # --- _sort_key tests ---
 
 class TestSortKey:
@@ -170,6 +230,16 @@ class TestSortKey:
     def test_missing_span_key(self):
         entries = [
             {'fullText': 'no span key'},
+            {'span': '2020', 'fullText': 'has span'},
+        ]
+        sorted_entries = sorted(entries, key=_sort_key)
+        assert sorted_entries[0]['span'] == '2020'
+
+    def test_whitespace_only_span_does_not_crash(self):
+        """Regression for nj-cms-8611: a truthy but whitespace-only span crashed
+        _parse_start_year with IndexError during sorting."""
+        entries = [
+            {'span': ' ', 'fullText': 'blank span'},
             {'span': '2020', 'fullText': 'has span'},
         ]
         sorted_entries = sorted(entries, key=_sort_key)
